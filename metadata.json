@@ -1,0 +1,6 @@
+{
+  "name": "CertiFlow",
+  "description": "CertiFlow is a Digital Certificate Issuance & Verification System that automates certificate workflows and ensures secure QR-based verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

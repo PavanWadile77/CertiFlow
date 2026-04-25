@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && request.auth.token.email == 'pavanwadile777@gmail.com'; 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // --- Validation Helpers ---
+    
+    function isValidCertificate(data) {
+      return data.keys().hasAll(['recipientName', 'courseName', 'issueDate', 'issuerId', 'status', 'certId'])
+        && data.recipientName is string && data.recipientName.size() <= 100
+        && data.courseName is string && data.courseName.size() <= 100
+        && data.issueDate is timestamp
+        && data.issuerId == request.auth.uid
+        && data.status in ['active', 'revoked']
+        && data.certId is string && data.certId.size() == 8;
+    }
+
+    // --- Rules ---
+
+    match /issuers/{userId} {
+      allow get: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    match /certificates/{certId} {
+      // Secure List: Forces client to filter by issuerId
+      allow list: if isSignedIn() && (
+        resource.data.issuerId == request.auth.uid || isAdmin()
+      );
+
+      // Get: Allow if you are the issuer OR if it's an active certificate (for public verification)
+      // Note: In AI Studio, public verification is often done via query. 
+      // If doing get(docId), we still protect it.
+      allow get: if (isSignedIn() && (resource.data.issuerId == request.auth.uid || isAdmin()))
+                 || (resource.data.status == 'active');
+
+      allow create: if isVerified() 
+                    && isValidCertificate(incoming())
+                    && incoming().issueDate == request.time;
+
+      allow update: if isVerified() && (
+        // Action: Revoke
+        (
+          existing().issuerId == request.auth.uid 
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+          && incoming().status == 'revoked'
+          && existing().status == 'active' // Can't un-revoke easily
+        )
+        || isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

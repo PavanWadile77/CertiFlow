@@ -1,0 +1,164 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && request.auth.token.email == 'pavanwadile777@gmail.com'; 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // --- Validation Helpers ---
+    
+    function isValidProfile(data) {
+      return data.keys().hasAll(['displayName', 'email', 'role', 'organization', 'createdAt'])
+        && data.displayName is string && data.displayName.size() <= 100
+        && data.email == request.auth.token.email
+        && data.role in ['organiser', 'user']
+        && data.organization is string
+        && data.createdAt == request.time;
+    }
+
+    function isValidCertificate(data) {
+      return data.keys().hasAll(['recipientName', 'recipientEmail', 'courseName', 'grade', 'issueDate', 'issuerId', 'issuerName', 'issuerOrg', 'status', 'certId', 'signature', 'fileName', 'fileUrl'])
+        && data.recipientName is string && data.recipientName.size() <= 100
+        && data.recipientEmail is string && data.recipientEmail.size() <= 100
+        && data.courseName is string && data.courseName.size() <= 200
+        && data.issueDate is timestamp
+        && data.issuerId == request.auth.uid
+        && data.status in ['active', 'revoked']
+        && data.certId is string;
+    }
+
+    function isValidUserDoc(data) {
+      return data.keys().hasAll(['userId', 'name', 'fileName', 'fileUrl', 'type', 'uploadDate'])
+        && data.keys().size() == 6
+        && (data.userId == request.auth.uid || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'organiser')
+        && data.name is string && data.name.size() <= 100
+        && data.fileUrl is string && data.fileUrl.size() <= 1000000
+        && data.uploadDate == request.time;
+    }
+
+    function isValidCertificateRequest(data) {
+      return data.keys().hasAll(['userId', 'userName', 'userEmail', 'courseName', 'requestDate', 'status', 'notes'])
+        && data.userId == request.auth.uid
+        && data.userEmail == request.auth.token.email
+        && data.courseName is string && data.courseName.size() <= 200
+        && data.status == 'pending'
+        && data.requestDate == request.time;
+    }
+
+    function isValidAccessGrant(data) {
+      return data.keys().hasAll(['resourceId', 'resourceType', 'ownerId', 'sharedWithEmail', 'grantedAt'])
+        && data.ownerId == request.auth.uid
+        && data.resourceType in ['document', 'certificate']
+        && data.sharedWithEmail is string && data.sharedWithEmail.size() <= 100
+        && data.grantedAt == request.time;
+    }
+
+    // --- Rules ---
+
+    match /profiles/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidProfile(incoming());
+      allow update: if isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'organization'])
+      ) || isAdmin();
+    }
+
+    match /user_documents/{docId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        exists(/databases/$(database)/documents/access_grants/$(request.auth.token.email + '_' + docId))
+      );
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidUserDoc(incoming());
+    }
+
+    match /certificates/{docId} {
+      allow get, update, delete: if isValidId(docId);
+
+      // List: Organisern sees their issued ones, User sees their received ones
+      allow list: if isSignedIn() && (
+        resource.data.issuerId == request.auth.uid || 
+        (resource.data.recipientEmail != null && resource.data.recipientEmail == request.auth.token.email) ||
+        isAdmin()
+      );
+
+      // Get: Allow if issuer, owner (recipient email), shared access, or active
+      allow get: if (isSignedIn() && (
+        resource.data.issuerId == request.auth.uid || 
+        (resource.data.recipientEmail != null && resource.data.recipientEmail == request.auth.token.email) ||
+        exists(/databases/$(database)/documents/access_grants/$(request.auth.token.email + '_' + docId)) ||
+        isAdmin()
+      )) || (resource.data.status == 'active');
+
+      allow create: if isVerified() 
+                    && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'organiser'
+                    && isValidCertificate(incoming())
+                    && incoming().issueDate == request.time;
+
+      allow update: if isVerified() && (
+        // Action: Revoke
+        (
+          existing().issuerId == request.auth.uid 
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+          && incoming().status == 'revoked'
+          && existing().status == 'active'
+        )
+        || isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /certificate_requests/{requestId} {
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'organiser' ||
+        isAdmin()
+      );
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || 
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'organiser' ||
+        isAdmin()
+      );
+      allow create: if isVerified() && isValidCertificateRequest(incoming());
+      allow update: if isVerified() && (
+        // Organiser: Approve/Reject
+        (
+          get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'organiser'
+          && incoming().diff(existing()).affectedKeys().hasAny(['status', 'rejectionReason'])
+          && incoming().status in ['approved', 'rejected']
+        )
+      );
+      allow delete: if isSignedIn() && (
+        (resource.data.userId == request.auth.uid && existing().status == 'pending') ||
+        isAdmin()
+      );
+    }
+
+    match /access_grants/{grantId} {
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || resource.data.sharedWithEmail == request.auth.token.email);
+      allow get: if isSignedIn() && (resource.data.ownerId == request.auth.uid || resource.data.sharedWithEmail == request.auth.token.email);
+      allow create: if isSignedIn() && isValidAccessGrant(incoming()) && grantId == (incoming().sharedWithEmail + '_' + incoming().resourceId);
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}

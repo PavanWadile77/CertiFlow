@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "User Profile",
+      "description": "Information about the user and their role in the system.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["organiser", "user"] },
+        "organization": { "type": "string", "description": "Only for organisers" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "email", "role"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "A digital certificate issued to a recipient.",
+      "type": "object",
+      "properties": {
+        "recipientName": { "type": "string" },
+        "recipientEmail": { "type": "string", "description": "Key for wallet sync" },
+        "recipientId": { "type": "string", "description": "Linked once user claims it" },
+        "courseName": { "type": "string" },
+        "fileName": { "type": "string", "description": "Name of the uploaded certificate file" },
+        "fileUrl": { "type": "string", "description": "Base64 or URL of the attached certificate" },
+        "issueDate": { "type": "string", "format": "date-time" },
+        "grade": { "type": "string" },
+        "issuerId": { "type": "string" },
+        "issuerName": { "type": "string" },
+        "issuerOrg": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "revoked"] },
+        "certId": { "type": "string", "description": "Verification ID" },
+        "signature": { "type": "string", "description": "Base64 or URL of issuer signature" }
+      },
+      "required": ["recipientName", "recipientEmail", "courseName", "issueDate", "issuerId", "status", "certId"]
+    },
+    "UserDocument": {
+      "title": "User Document",
+      "description": "Personal documents uploaded by the citizen for secure storage",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "type": { "type": "string" },
+        "uploadDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "fileUrl"]
+    },
+    "CertificateRequest": {
+      "title": "Certificate Request",
+      "description": "A request made by a participant for a certificate.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "courseName": { "type": "string" },
+        "requestDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "notes": { "type": "string" },
+        "rejectionReason": { "type": "string" }
+      },
+      "required": ["userId", "userName", "userEmail", "courseName", "requestDate", "status"]
+    },
+    "AccessGrant": {
+      "title": "Access Grant",
+      "description": "Permissions granted to others to view a document or certificate",
+      "type": "object",
+      "properties": {
+        "resourceId": { "type": "string" },
+        "resourceType": { "type": "string", "enum": ["document", "certificate"] },
+        "ownerId": { "type": "string" },
+        "sharedWithEmail": { "type": "string" },
+        "grantedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["resourceId", "resourceType", "ownerId", "sharedWithEmail", "grantedAt"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "User account settings and roles"
+    },
+    "/certificates/{docId}": {
+      "schema": "Certificate",
+      "description": "Global certificate registry"
+    },
+    "/user_documents/{docId}": {
+      "schema": "UserDocument",
+      "description": "Private documents securely stored by individuals"
+    },
+    "/certificate_requests/{requestId}": {
+      "schema": "CertificateRequest",
+      "description": "Pending and historical certificate requests"
+    },
+    "/access_grants/{grantId}": {
+      "schema": "AccessGrant",
+      "description": "Registry of document sharing permissions"
+    }
+  }
+}

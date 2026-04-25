@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0076CE;
+  --color-primary-light: #E7F3FF;
+  --color-primary-dark: #005A9E;
+  --color-neutral-bg: #F5F7FA;
+  --color-border-muted: #E1E8ED;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  @apply bg-[#F5F7FA] text-[#1A1F26] antialiased;
+}
+
+.digi-card {
+  @apply bg-white border border-[#E1E8ED] rounded-xl shadow-sm;
+}
+
+.digi-btn-primary {
+  @apply bg-[#0076CE] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#005A9E] transition-all disabled:opacity-50;
+}
+
+.digi-btn-outline {
+  @apply bg-white border border-[#0076CE] text-[#0076CE] font-semibold py-2 px-6 rounded-lg hover:bg-[#E7F3FF] transition-all;
+}
+
+.text-primary {
+  @apply text-[#0076CE];
+}
