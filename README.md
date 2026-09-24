@@ -1,24 +1,77 @@
-Link:  https://ai.studio/apps/867480b6-3f9d-417a-85ab-ba91989a3dac
+# CertiFlow 🎓
 
+An AI-assisted digital certificate platform for **certificate creation, distribution, QR-based verification, and certificate management**.
 
+## Overview
 
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+CertiFlow is a modern web application built with React and Firebase. It combines certificate workflows with QR scanning and AI/API integrations to support digital credential management.
 
-# Run and deploy your AI Studio app
+## ✨ Features
 
-This contains everything you need to run your app locally.
+- Digital certificate creation workflow
+- Certificate management
+- QR code generation
+- QR code scanning
+- Certificate verification workflow
+- Firebase integration
+- Responsive web UI
+- AI-assisted capabilities
+- Modern component-based architecture
 
-View your app in AI Studio: https://ai.studio/apps/867480b6-3f9d-417a-85ab-ba91989a3dac
+## 🛠 Tech Stack
 
-## Run Locally
+- React 19
+- TypeScript
+- Vite
+- Firebase
+- Google Gemini API
+- QRCode React
+- QR Scanner
+- Tailwind CSS
+- Motion
+- Lucide React
+- Express
 
-**Prerequisites:**  Node.js
+## ▶️ Run Locally
 
+```bash
+git clone https://github.com/PavanWadile77/CertiFlow.git
+cd CertiFlow
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Production build:
+
+```bash
+npm run build
+npm run preview
+```
+
+Type-check:
+
+```bash
+npm run lint
+```
+
+## 🔐 Configuration
+
+Create a local environment file and configure the required Gemini/Firebase values:
+
+```bash
+cp .env.example .env
+```
+
+Never commit API keys, Firebase service-account files, or other secrets.
+
+## 🔗 Project
+
+AI Studio project: https://ai.studio/apps/867480b6-3f9d-417a-85ab-ba91989a3dac
+
+## Repository
+
+https://github.com/PavanWadile77/CertiFlow
+
+## Author
+
+**Pavan Wadile**
