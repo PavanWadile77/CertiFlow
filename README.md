@@ -1,5 +1,14 @@
 # CertiFlow 🎓
 
+<div align="center">
+
+**Full-Stack Web • Certificate Automation • AI**
+
+<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
+
+</div>
+
+
 An AI-assisted digital certificate platform for **certificate creation, management, distribution, and QR-based verification**.
 
 ## ✨ Features
@@ -30,3 +39,17 @@ Keep Gemini, Firebase, and other credentials in environment configuration.
 
 ## 👨‍💻 Author
 **Pavan Wadile**
+
+## 🔧 Engineering Focus
+
+Certificate lifecycle management, QR verification, Firebase integration and AI-assisted capabilities.
+
+---
+
+<div align="center">
+
+**Pavan Wadile · B.Tech Information Technology**
+
+[GitHub](https://github.com/PavanWadile77)
+
+</div>
